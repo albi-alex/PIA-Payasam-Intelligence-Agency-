@@ -5,116 +5,1456 @@
 
     <meta charset="UTF-8">
 
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
 
-    <title>Payasam Intelligence Agency</title>
+    <title>
+        Payasam Intelligence Agency
+    </title>
+
+
+    <style>
+
+        @import url(
+            'https://fonts.googleapis.com/css2?family=Special+Elite&family=Lora:ital,wght@0,400;0,500;0,600;1,400&display=swap'
+        );
+
+
+        :root {
+
+            --cream: #E8DCC3;
+            --ink: #1C1810;
+            --stamp-red: #A62D2D;
+            --gold: #C8963E;
+            --sage: #5B6B4D;
+            --paper: #F5EFE1;
+
+        }
+
+
+        * {
+
+            box-sizing: border-box;
+
+            margin: 0;
+
+            padding: 0;
+
+        }
+
+
+        body {
+
+            background: var(--cream);
+
+            background-image:
+
+                linear-gradient(
+                    var(--cream),
+                    var(--cream)
+                ),
+
+                repeating-linear-gradient(
+                    0deg,
+                    rgba(
+                        28,
+                        24,
+                        16,
+                        0.025
+                    )
+                    0px,
+
+                    rgba(
+                        28,
+                        24,
+                        16,
+                        0.025
+                    )
+                    1px,
+
+                    transparent
+                    1px,
+
+                    transparent
+                    3px
+                );
+
+            color: var(--ink);
+
+            font-family:
+                'Lora',
+                serif;
+
+            line-height: 1.6;
+
+            padding:
+                32px
+                16px
+                80px;
+
+        }
+
+
+        .sheet {
+
+            max-width: 880px;
+
+            margin: 0 auto;
+
+        }
+
+
+        /* =================================================
+           LETTERHEAD
+        ================================================= */
+
+        .letterhead {
+
+            display: flex;
+
+            align-items: center;
+
+            gap: 20px;
+
+            border-bottom:
+                3px double
+                var(--ink);
+
+            padding-bottom: 18px;
+
+            margin-bottom: 6px;
+
+        }
+
+
+        .seal {
+
+            width: 64px;
+
+            height: 64px;
+
+            border-radius: 50%;
+
+            border:
+                2px solid
+                var(--ink);
+
+            display: flex;
+
+            align-items: center;
+
+            justify-content: center;
+
+            flex-shrink: 0;
+
+            position: relative;
+
+        }
+
+
+        .seal::before {
+
+            content: "";
+
+            position: absolute;
+
+            inset: 6px;
+
+            border:
+                1px solid
+                var(--ink);
+
+            border-radius: 50%;
+
+        }
+
+
+        .seal span {
+
+            font-size: 22px;
+
+        }
+
+
+        .letterhead-text h1 {
+
+            font-family:
+                'Special Elite',
+                monospace;
+
+            font-size:
+                1.5rem;
+
+            letter-spacing:
+                0.5px;
+
+        }
+
+
+        .letterhead-text p {
+
+            font-size:
+                0.85rem;
+
+            color:
+                var(--sage);
+
+            font-style:
+                italic;
+
+            margin-top:
+                2px;
+
+        }
+
+
+        /* =================================================
+           FILE META
+        ================================================= */
+
+        .file-meta {
+
+            display: flex;
+
+            justify-content:
+                space-between;
+
+            font-family:
+                'Special Elite',
+                monospace;
+
+            font-size:
+                0.75rem;
+
+            color:
+                #5c5346;
+
+            padding:
+                10px
+                0
+                24px;
+
+            border-bottom:
+                1px solid
+                #b5a888;
+
+            margin-bottom:
+                32px;
+
+        }
+
+
+        /* =================================================
+           HERO
+        ================================================= */
+
+        .hero {
+
+            position: relative;
+
+            padding:
+                8px
+                0
+                40px;
+
+        }
+
+
+        .hero h2 {
+
+            font-family:
+                'Lora',
+                serif;
+
+            font-weight:
+                600;
+
+            font-size:
+                2.4rem;
+
+            max-width:
+                600px;
+
+            line-height:
+                1.25;
+
+        }
+
+
+        .hero p {
+
+            max-width:
+                520px;
+
+            margin-top:
+                16px;
+
+            font-size:
+                1.05rem;
+
+            color:
+                #3a332a;
+
+        }
+
+
+        .stamp {
+
+            position: absolute;
+
+            top: 0;
+
+            right: 0;
+
+            border:
+                3px solid
+                var(--stamp-red);
+
+            color:
+                var(--stamp-red);
+
+            font-family:
+                'Special Elite',
+                monospace;
+
+            font-size:
+                1.1rem;
+
+            padding:
+                8px
+                14px;
+
+            transform:
+                rotate(9deg);
+
+            opacity:
+                0.85;
+
+            letter-spacing:
+                2px;
+
+        }
+
+
+        /* =================================================
+           FILE CARDS
+        ================================================= */
+
+        .files {
+
+            display: grid;
+
+            grid-template-columns:
+                1fr
+                1fr;
+
+            gap:
+                24px;
+
+            margin:
+                16px
+                0
+                48px;
+
+        }
+
+
+        .file-card {
+
+            background:
+                var(--paper);
+
+            border:
+                1px solid
+                #c9bb9a;
+
+            box-shadow:
+                4px 4px 0
+                rgba(
+                    28,
+                    24,
+                    16,
+                    0.12
+                );
+
+            padding:
+                24px;
+
+            position:
+                relative;
+
+        }
+
+
+        .file-tab {
+
+            position:
+                absolute;
+
+            top:
+                -14px;
+
+            left:
+                20px;
+
+            background:
+                var(--ink);
+
+            color:
+                var(--paper);
+
+            font-family:
+                'Special Elite',
+                monospace;
+
+            font-size:
+                0.68rem;
+
+            padding:
+                4px
+                10px;
+
+            letter-spacing:
+                1px;
+
+        }
+
+
+        .file-card.primary
+        .file-tab {
+
+            background:
+                var(--stamp-red);
+
+        }
+
+
+        .file-card h3 {
+
+            font-family:
+                'Lora',
+                serif;
+
+            font-size:
+                1.3rem;
+
+            margin:
+                10px
+                0
+                6px;
+
+        }
+
+
+        .tagline {
+
+            font-family:
+                'Special Elite',
+                monospace;
+
+            font-size:
+                0.72rem;
+
+            color:
+                var(--sage);
+
+            margin-bottom:
+                14px;
+
+        }
+
+
+        .file-card p {
+
+            font-size:
+                0.95rem;
+
+            color:
+                #3a332a;
+
+            margin-bottom:
+                20px;
+
+        }
+
+
+        /* =================================================
+           DROP ZONE
+        ================================================= */
+
+        .dropzone {
+
+            display:
+                block;
+
+            border:
+                2px dashed
+                #9c8e70;
+
+            padding:
+                22px;
+
+            text-align:
+                center;
+
+            font-family:
+                'Special Elite',
+                monospace;
+
+            font-size:
+                0.78rem;
+
+            color:
+                #5c5346;
+
+            background:
+                repeating-linear-gradient(
+                    135deg,
+                    transparent 0 8px,
+                    rgba(
+                        28,
+                        24,
+                        16,
+                        0.02
+                    )
+                    8px 16px
+                );
+
+            cursor:
+                pointer;
+
+            transition:
+                border-color
+                0.15s ease,
+                color
+                0.15s ease;
+
+        }
+
+
+        .dropzone:hover {
+
+            border-color:
+                var(--ink);
+
+            color:
+                var(--ink);
+
+        }
+
+
+        .file-input {
+
+            display:
+                none;
+
+        }
+
+
+        /* =================================================
+           BUTTON
+        ================================================= */
+
+        .upload-button {
+
+            display:
+                inline-block;
+
+            margin-top:
+                14px;
+
+            padding:
+                10px
+                18px;
+
+            background:
+                var(--ink);
+
+            color:
+                var(--paper);
+
+            border:
+                none;
+
+            font-family:
+                'Special Elite',
+                monospace;
+
+            font-size:
+                0.75rem;
+
+            cursor:
+                pointer;
+
+        }
+
+
+        .upload-button:hover {
+
+            background:
+                var(--stamp-red);
+
+        }
+
+
+        .selected-file {
+
+            margin-top:
+                10px;
+
+            font-family:
+                'Special Elite',
+                monospace;
+
+            font-size:
+                0.7rem;
+
+            color:
+                var(--sage);
+
+            min-height:
+                20px;
+
+            word-break:
+                break-word;
+
+        }
+
+
+        /* =================================================
+           READOUT
+        ================================================= */
+
+        .readout {
+
+            background:
+                var(--ink);
+
+            color:
+                var(--paper);
+
+            padding:
+                36px
+                28px;
+
+            margin-bottom:
+                40px;
+
+            display:
+                flex;
+
+            align-items:
+                center;
+
+            gap:
+                32px;
+
+            flex-wrap:
+                wrap;
+
+        }
+
+
+        .dial {
+
+            width:
+                130px;
+
+            height:
+                130px;
+
+            border-radius:
+                50%;
+
+            border:
+                6px solid
+                var(--gold);
+
+            display:
+                flex;
+
+            flex-direction:
+                column;
+
+            align-items:
+                center;
+
+            justify-content:
+                center;
+
+            flex-shrink:
+                0;
+
+        }
+
+
+        .dial .num {
+
+            font-family:
+                'Special Elite',
+                monospace;
+
+            font-size:
+                1.9rem;
+
+            color:
+                var(--gold);
+
+        }
+
+
+        .dial .unit {
+
+            font-size:
+                0.65rem;
+
+            letter-spacing:
+                1px;
+
+            color:
+                #c9bfa8;
+
+            margin-top:
+                2px;
+
+        }
+
+
+        .readout-text h4 {
+
+            font-family:
+                'Special Elite',
+                monospace;
+
+            font-size:
+                0.85rem;
+
+            color:
+                var(--gold);
+
+            letter-spacing:
+                1px;
+
+            margin-bottom:
+                8px;
+
+        }
+
+
+        .readout-text p {
+
+            color:
+                #d8cfba;
+
+            font-size:
+                0.92rem;
+
+            max-width:
+                480px;
+
+        }
+
+
+        .readout-classification {
+
+            color:
+                var(--gold);
+
+            font-family:
+                'Special Elite',
+                monospace;
+
+        }
+
+
+        /* =================================================
+           FOOTER
+        ================================================= */
+
+        .footer {
+
+            border-top:
+                3px double
+                var(--ink);
+
+            padding-top:
+                18px;
+
+            display:
+                flex;
+
+            justify-content:
+                space-between;
+
+            flex-wrap:
+                wrap;
+
+            gap:
+                12px;
+
+            font-family:
+                'Special Elite',
+                monospace;
+
+            font-size:
+                0.7rem;
+
+            color:
+                #6b614f;
+
+        }
+
+
+        .redacted {
+
+            display:
+                inline-block;
+
+            background:
+                var(--ink);
+
+            color:
+                var(--ink);
+
+            padding:
+                0
+                6px;
+
+            user-select:
+                none;
+
+        }
+
+
+        /* =================================================
+           LOADING
+        ================================================= */
+
+        .loading {
+
+            display:
+                none;
+
+            margin-top:
+                12px;
+
+            font-family:
+                'Special Elite',
+                monospace;
+
+            font-size:
+                0.75rem;
+
+            color:
+                var(--stamp-red);
+
+        }
+
+
+        /* =================================================
+           MOBILE
+        ================================================= */
+
+        @media (max-width: 640px) {
+
+            .files {
+
+                grid-template-columns:
+                    1fr;
+
+            }
+
+
+            .file-meta {
+
+                flex-direction:
+                    column;
+
+                gap:
+                    6px;
+
+            }
+
+
+            .hero h2 {
+
+                font-size:
+                    1.9rem;
+
+            }
+
+
+            .stamp {
+
+                position:
+                    relative;
+
+                display:
+                    inline-block;
+
+                margin-bottom:
+                    20px;
+
+            }
+
+
+            .letterhead-text h1 {
+
+                font-size:
+                    1.1rem;
+
+            }
+
+        }
+
+    </style>
 
 </head>
 
 
 <body>
 
-    <h1>🍮 PAYASAM INTELLIGENCE AGENCY</h1>
 
-    <h2>
-        The world's most unnecessary payasam analysis system.
-    </h2>
+<div class="sheet">
 
 
-    <p>
-        We use advanced computer vision to answer one extremely
-        important question:
-    </p>
+    <!-- =================================================
+         LETTERHEAD
+    ================================================= -->
+
+    <div class="letterhead">
+
+        <div class="seal">
+
+            <span>🍮</span>
+
+        </div>
 
 
-    <h2>
-        HOW THICK IS YOUR PAYASAM?
-    </h2>
+        <div class="letterhead-text">
 
+            <h1>
+                PAYASAM INTELLIGENCE AGENCY
+            </h1>
 
-    <hr>
+            <p>
+                Directorate of Dessert Density
+                &mdash; Est. 2026
+            </p>
 
-
-    <h2>
-        Choose your analysis method
-    </h2>
-
-
-    <!-- ========================= -->
-    <!-- VIDEO ANALYSIS -->
-    <!-- ========================= -->
-
-    <div>
-
-        <h3>📹 VIDEO ANALYSIS</h3>
-
-        <p>
-            Analyze how your payasam flows.
-        </p>
-
-        <button type="button">
-            Upload Video
-        </button>
+        </div>
 
     </div>
 
 
-    <br>
+    <!-- =================================================
+         FILE META
+    ================================================= -->
+
+    <div class="file-meta">
+
+        <span>
+
+            CASE FILE NO.
+            PIA&ndash;<span class="redacted">0417</span>
+
+        </span>
 
 
-    <!-- ========================= -->
-    <!-- PHOTO ANALYSIS -->
-    <!-- ========================= -->
+        <span>
 
-    <div>
+            CLEARANCE:
+            KITCHEN LEVEL
 
-        <h3>📸 PHOTO ANALYSIS</h3>
+        </span>
+
+
+        <span>
+
+            STATUS:
+            UNDER ANALYSIS
+
+        </span>
+
+    </div>
+
+
+    <!-- =================================================
+         HERO
+    ================================================= -->
+
+    <div class="hero">
+
+        <div class="stamp">
+            CLASSIFIED
+        </div>
+
+
+        <h2>
+
+            Every bowl of payasam tells a story.
+            We just measure how thick it's lying.
+
+        </h2>
+
 
         <p>
-            Judge your payasam by looking at it.
+
+            Submit visual evidence of a payasam sample.
+            Our computer vision unit will assess flow,
+            viscosity, and pour behavior to determine
+            its Payasam Arbitrary Index &mdash; a
+            rigorously invented metric.
+
         </p>
 
+    </div>
 
-        <form
-            action="/analyze-photo"
-            method="POST"
-            enctype="multipart/form-data"
-        >
 
-            <input
-                type="file"
-                name="photo"
-                accept="image/*"
-                required
+    <!-- =================================================
+         EVIDENCE CARDS
+    ================================================= -->
+
+    <div class="files">
+
+
+        <!-- =================================================
+             VIDEO CARD
+        ================================================= -->
+
+        <div class="file-card primary">
+
+            <div class="file-tab">
+                PRIMARY EVIDENCE
+            </div>
+
+
+            <h3>
+                Video Analysis
+            </h3>
+
+
+            <div class="tagline">
+                MOTION &amp; FLOW ASSESSMENT
+            </div>
+
+
+            <p>
+
+                Upload footage of the payasam being
+                stirred or poured. Movement is tracked
+                frame by frame to estimate viscosity.
+
+            </p>
+
+
+            <form
+                id="videoForm"
+                action="/analyze-video"
+                method="POST"
+                enctype="multipart/form-data"
             >
 
-            <br>
-            <br>
+                <label
+                    class="dropzone"
+                    for="videoInput"
+                >
 
-            <button type="submit">
-                Analyze Payasam 🍮
-            </button>
+                    &#9660;
 
-        </form>
+                    DROP FOOTAGE HERE
+                    OR CLICK TO SELECT
+
+                </label>
+
+
+                <input
+                    class="file-input"
+                    type="file"
+                    id="videoInput"
+                    name="video"
+                    accept="video/*"
+                    required
+                >
+
+
+                <div
+                    class="selected-file"
+                    id="videoName"
+                ></div>
+
+
+                <button
+                    class="upload-button"
+                    type="submit"
+                >
+
+                    SUBMIT VIDEO EVIDENCE
+
+                </button>
+
+
+                <div
+                    class="loading"
+                    id="videoLoading"
+                >
+
+                    ⏳ ANALYZING EVIDENCE...
+                    PLEASE WAIT
+
+                </div>
+
+            </form>
+
+        </div>
+
+
+        <!-- =================================================
+             PHOTO CARD
+        ================================================= -->
+
+        <div class="file-card">
+
+            <div class="file-tab">
+                SECONDARY EVIDENCE
+            </div>
+
+
+            <h3>
+                Photo Analysis
+            </h3>
+
+
+            <div class="tagline">
+                STATIC VISUAL ASSESSMENT
+            </div>
+
+
+            <p>
+
+                Submit a single photograph for a quick,
+                less rigorous read. Useful when the sample
+                cannot be filmed in motion.
+
+            </p>
+
+
+            <form
+                id="photoForm"
+                action="/analyze-photo"
+                method="POST"
+                enctype="multipart/form-data"
+            >
+
+                <label
+                    class="dropzone"
+                    for="photoInput"
+                >
+
+                    &#9660;
+
+                    DROP PHOTOGRAPH HERE
+                    OR CLICK TO SELECT
+
+                </label>
+
+
+                <input
+                    class="file-input"
+                    type="file"
+                    id="photoInput"
+                    name="image"
+                    accept="image/*"
+                    required
+                >
+
+
+                <div
+                    class="selected-file"
+                    id="photoName"
+                ></div>
+
+
+                <button
+                    class="upload-button"
+                    type="submit"
+                >
+
+                    SUBMIT PHOTO EVIDENCE
+
+                </button>
+
+
+                <div
+                    class="loading"
+                    id="photoLoading"
+                >
+
+                    ⏳ ANALYZING EVIDENCE...
+                    PLEASE WAIT
+
+                </div>
+
+            </form>
+
+        </div>
 
     </div>
 
 
-    <hr>
+    <!-- =================================================
+         LATEST READOUT
+    ================================================= -->
+
+    <div class="readout">
 
 
-    <!-- ========================= -->
-    <!-- DISCLAIMER -->
-    <!-- ========================= -->
+        <div class="dial">
 
-    <p>
-        ⚠️ PAI has absolutely no scientific validity.
-    </p>
+            <div class="num">
 
-    <p>
-        This project exists because apparently,
-        measuring payasam thickness is important.
-    </p>
+                {% if latest_pai is not none %}
+
+                    {{ "%.1f"|format(latest_pai) }}
+
+                {% else %}
+
+                    --
+
+                {% endif %}
+
+            </div>
+
+
+            <div class="unit">
+
+                {% if latest_type == "PHOTO" %}
+
+                    V-PAI UNITS
+
+                {% else %}
+
+                    PAI UNITS
+
+                {% endif %}
+
+            </div>
+
+        </div>
+
+
+        <div class="readout-text">
+
+            <h4>
+                LATEST READOUT
+            </h4>
+
+
+            {% if latest_pai is not none %}
+
+                <p>
+
+                    <strong>
+                        {{ latest_type }}
+                        ANALYSIS COMPLETE.
+                    </strong>
+
+                    <br><br>
+
+                    {{ latest_message }}
+
+                    <br><br>
+
+                    <span
+                        class="readout-classification"
+                    >
+
+                        Classification:
+                        {{ latest_classification }}
+
+                    </span>
+
+                </p>
+
+            {% else %}
+
+                <p>
+
+                    No evidence analyzed yet.
+                    Submit a photograph or video above
+                    to receive the latest PIA assessment.
+
+                </p>
+
+            {% endif %}
+
+        </div>
+
+    </div>
+
+
+    <!-- =================================================
+         FOOTER
+    ================================================= -->
+
+    <div class="footer">
+
+        <span>
+
+            PAYASAM INTELLIGENCE AGENCY
+            &mdash;
+            USELESS PROJECTS 3.0
+
+        </span>
+
+
+        <span>
+
+            ALL READOUTS ARE FICTIONAL.
+            NO PAYASAM WAS HARMED.
+
+        </span>
+
+    </div>
+
+
+</div>
+
+
+<!-- =====================================================
+     JAVASCRIPT
+===================================================== -->
+
+<script>
+
+
+    // =====================================================
+    // VIDEO FILE
+    // =====================================================
+
+    const videoInput =
+        document.getElementById(
+            "videoInput"
+        );
+
+
+    const videoName =
+        document.getElementById(
+            "videoName"
+        );
+
+
+    videoInput.addEventListener(
+        "change",
+        function () {
+
+            if (
+                this.files.length > 0
+            ) {
+
+                videoName.textContent =
+                    "SELECTED: "
+                    +
+                    this.files[0].name;
+
+            }
+
+        }
+    );
+
+
+    // =====================================================
+    // PHOTO FILE
+    // =====================================================
+
+    const photoInput =
+        document.getElementById(
+            "photoInput"
+        );
+
+
+    const photoName =
+        document.getElementById(
+            "photoName"
+        );
+
+
+    photoInput.addEventListener(
+        "change",
+        function () {
+
+            if (
+                this.files.length > 0
+            ) {
+
+                photoName.textContent =
+                    "SELECTED: "
+                    +
+                    this.files[0].name;
+
+            }
+
+        }
+    );
+
+
+    // =====================================================
+    // VIDEO LOADING
+    // =====================================================
+
+    const videoForm =
+        document.getElementById(
+            "videoForm"
+        );
+
+
+    const videoLoading =
+        document.getElementById(
+            "videoLoading"
+        );
+
+
+    videoForm.addEventListener(
+        "submit",
+        function () {
+
+            videoLoading.style.display =
+                "block";
+
+        }
+    );
+
+
+    // =====================================================
+    // PHOTO LOADING
+    // =====================================================
+
+    const photoForm =
+        document.getElementById(
+            "photoForm"
+        );
+
+
+    const photoLoading =
+        document.getElementById(
+            "photoLoading"
+        );
+
+
+    photoForm.addEventListener(
+        "submit",
+        function () {
+
+            photoLoading.style.display =
+                "block";
+
+        }
+    );
+
+
+</script>
 
 
 </body>

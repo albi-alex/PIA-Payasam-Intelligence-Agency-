@@ -1,165 +1,284 @@
 import cv2
 import numpy as np
 
+from PIL import Image
+from transformers import pipeline
 
-def detect_payasam_region(image):
-    """
-    Try to find the region that most likely contains payasam.
 
-    This is a simple computer-vision heuristic.
-    It is not a trained food-recognition model.
-    """
+# =========================================================
+# LOAD AI MODEL
+# =========================================================
 
-    # Convert BGR image to HSV
-    hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+print("🤖 Loading photo visual AI model...")
 
-    # Look for warm colors commonly found in payasam
-    lower_warm = np.array([5, 30, 30])
-    upper_warm = np.array([40, 255, 255])
+photo_classifier = pipeline(
+    "zero-shot-image-classification",
+    model="openai/clip-vit-base-patch32"
+)
 
-    mask = cv2.inRange(
-        hsv,
-        lower_warm,
-        upper_warm
-    )
+print("🤖 Photo visual AI model loaded!")
 
-    # Remove small noise
-    kernel = np.ones((7, 7), np.uint8)
 
-    mask = cv2.morphologyEx(
-        mask,
-        cv2.MORPH_OPEN,
-        kernel
-    )
-
-    # Fill small gaps
-    mask = cv2.morphologyEx(
-        mask,
-        cv2.MORPH_CLOSE,
-        kernel
-    )
-
-    # Find connected regions
-    contours, _ = cv2.findContours(
-        mask,
-        cv2.RETR_EXTERNAL,
-        cv2.CHAIN_APPROX_SIMPLE
-    )
-
-    # If no warm region is found,
-    # use the complete image
-    if not contours:
-        return image, mask
-
-    # Find the largest detected region
-    largest_contour = max(
-        contours,
-        key=cv2.contourArea
-    )
-
-    area = cv2.contourArea(largest_contour)
-
-    image_area = image.shape[0] * image.shape[1]
-
-    # Ignore extremely small regions
-    if area < image_area * 0.02:
-        return image, mask
-
-    # Get bounding rectangle
-    x, y, w, h = cv2.boundingRect(
-        largest_contour
-    )
-
-    # Crop the detected region
-    region = image[
-        y:y + h,
-        x:x + w
-    ]
-
-    return region, mask
-
+# =========================================================
+# ANALYZE BASIC VISUAL FEATURES
+# =========================================================
 
 def analyze_visual_features(image):
-    """
-    Extract visual features from the likely payasam region.
-    """
 
-    # Detect likely payasam region
-    payasam_region, mask = detect_payasam_region(image)
+    # Resize image
+    resized = cv2.resize(
+        image,
+        (640, 480)
+    )
 
-    # Convert to HSV
+    # -----------------------------------------------------
+    # HSV
+    # -----------------------------------------------------
+
     hsv = cv2.cvtColor(
-        payasam_region,
+        resized,
         cv2.COLOR_BGR2HSV
     )
 
-    # Calculate brightness
-    brightness = np.mean(
-        hsv[:, :, 2]
+    # -----------------------------------------------------
+    # Brightness
+    # -----------------------------------------------------
+
+    brightness = float(
+        np.mean(
+            hsv[:, :, 2]
+        )
     )
 
-    # Calculate saturation
-    saturation = np.mean(
-        hsv[:, :, 1]
+    # -----------------------------------------------------
+    # Saturation
+    # -----------------------------------------------------
+
+    saturation = float(
+        np.mean(
+            hsv[:, :, 1]
+        )
     )
 
-    # Convert to grayscale
+    # -----------------------------------------------------
+    # Texture
+    # -----------------------------------------------------
+
     gray = cv2.cvtColor(
-        payasam_region,
+        resized,
         cv2.COLOR_BGR2GRAY
     )
 
-    # Calculate texture
-    texture = np.std(gray)
+    texture = float(
+        np.std(gray)
+    )
 
-    # Detect edges
+    # -----------------------------------------------------
+    # Edge Density
+    # -----------------------------------------------------
+
     edges = cv2.Canny(
         gray,
-        50,
-        150
+        100,
+        200
     )
 
-    # Calculate edge density
-    edge_density = np.mean(
-        edges > 0
-    )
-
-    # Calculate smoothness
-    smoothness = 1 - min(
-        edge_density / 0.25,
-        1
+    edge_density = float(
+        np.mean(
+            edges > 0
+        )
     )
 
     return {
-        "brightness": float(brightness),
-        "saturation": float(saturation),
-        "texture": float(texture),
-        "edge_density": float(edge_density),
-        "smoothness": float(smoothness)
+
+        "brightness":
+            round(
+                brightness,
+                2
+            ),
+
+        "saturation":
+            round(
+                saturation,
+                2
+            ),
+
+        "texture":
+            round(
+                texture,
+                2
+            ),
+
+        "edge_density":
+            round(
+                edge_density,
+                4
+            )
     }
 
 
-def is_likely_payasam(features):
-    """
-    Perform a basic suitability check.
+# =========================================================
+# CHECK WHETHER IMAGE IS PAYASAM
+# =========================================================
 
-    This is a heuristic for our prototype.
-    It is NOT a trained food-recognition model.
-    """
+def is_likely_payasam(
+    features,
+    image=None
+):
 
-    texture = features["texture"]
-    edge_density = features["edge_density"]
-    saturation = features["saturation"]
+    # =====================================================
+    # AI CHECK
+    # =====================================================
 
-    # Very high edge density suggests a highly
-    # detailed image rather than a relatively
-    # smooth payasam surface.
-    if edge_density > 0.18:
-        return False
+    if image is not None:
 
-    # Very high saturation combined with strong
-    # texture is suspicious.
-    if saturation > 180 and texture > 60:
-        return False
+        # -------------------------------------------------
+        # Convert BGR → RGB
+        # -------------------------------------------------
 
-    return True
+        image_rgb = cv2.cvtColor(
+            image,
+            cv2.COLOR_BGR2RGB
+        )
+
+        pil_image = Image.fromarray(
+            image_rgb
+        )
+
+        # -------------------------------------------------
+        # AI CLASSIFICATION
+        # -------------------------------------------------
+
+        try:
+
+            results = photo_classifier(
+                pil_image,
+                candidate_labels=[
+                    "a bowl of payasam or kheer",
+                    "biriyani or savory Indian food"
+                ]
+            )
+
+        except Exception as error:
+
+            print(
+                "❌ Photo AI error:",
+                error
+            )
+
+            return False
+
+        # -------------------------------------------------
+        # SCORES
+        # -------------------------------------------------
+
+        payasam_score = 0.0
+
+        other_food_score = 0.0
+
+        for result in results:
+
+            label = result["label"]
+
+            score = float(
+                result["score"]
+            )
+
+            if label == (
+                "a bowl of payasam or kheer"
+            ):
+
+                payasam_score = score
+
+            elif label == (
+                "biriyani or savory Indian food"
+            ):
+
+                other_food_score = score
+
+        # -------------------------------------------------
+        # PRINT RESULT
+        # -------------------------------------------------
+
+        print("")
+        print("========================================")
+        print("📷 PHOTO AI VALIDATION")
+        print("========================================")
+
+        print(
+            f"🥣 Payasam score: "
+            f"{payasam_score:.3f}"
+        )
+
+        print(
+            f"🍛 Other food score: "
+            f"{other_food_score:.3f}"
+        )
+
+        # -------------------------------------------------
+        # DECISION
+        # -------------------------------------------------
+
+        suitable = (
+
+            payasam_score >= 0.40
+
+            and payasam_score
+                > other_food_score
+
+        )
+
+        if suitable:
+
+            print(
+                "✅ PHOTO ACCEPTED AS PAYASAM"
+            )
+
+        else:
+
+            print(
+                "❌ PHOTO REJECTED AS NON-PAYASAM"
+            )
+
+        print("========================================")
+
+        return suitable
+
+
+    # =====================================================
+    # FALLBACK
+    # =====================================================
+
+    # If no image was supplied, use basic
+    # visual features.
+
+    brightness = features.get(
+        "brightness",
+        0
+    )
+
+    saturation = features.get(
+        "saturation",
+        0
+    )
+
+    texture = features.get(
+        "texture",
+        0
+    )
+
+    score = 0
+
+    if brightness > 80:
+
+        score += 30
+
+    if saturation < 150:
+
+        score += 20
+
+    if texture < 80:
+
+        score += 20
+
+    return score >= 50

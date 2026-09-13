@@ -1,200 +1,673 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, session
 import os
-
 from werkzeug.utils import secure_filename
 
 from analysis.photo_processor import load_image, resize_image
+from analysis.visual_analysis import analyze_visual_features, is_likely_payasam
+from analysis.viscosity import calculate_vpai, classify_vpai
+from analysis.video_processor import get_video_info
+from analysis.optical_flow import calculate_optical_flow
+from analysis.video_validator import validate_video
 
-from analysis.visual_analysis import (
-    analyze_visual_features,
-    is_likely_payasam
-)
 
-from analysis.viscosity import (
-    calculate_vpai,
-    classify_vpai
-)
-
+# =========================================================
+# FLASK APP
+# =========================================================
 
 app = Flask(__name__)
 
-
-# ==========================================
-# UPLOAD FOLDER
-# ==========================================
-
-UPLOAD_FOLDER = "uploads/images"
-
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-
-app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
+app.secret_key = "pia-hackathon-secret-key"
 
 
-# ==========================================
+# =========================================================
+# FOLDERS
+# =========================================================
+
+IMAGE_FOLDER = "uploads/images"
+VIDEO_FOLDER = "uploads/videos"
+
+os.makedirs(
+    IMAGE_FOLDER,
+    exist_ok=True
+)
+
+os.makedirs(
+    VIDEO_FOLDER,
+    exist_ok=True
+)
+
+
+# =========================================================
 # HOME PAGE
-# ==========================================
+# =========================================================
 
 @app.route("/")
 def home():
 
-    return render_template("index.html")
+    latest_pai = session.get(
+        "latest_pai"
+    )
 
+    latest_type = session.get(
+        "latest_type"
+    )
 
-# ==========================================
-# PHOTO ANALYSIS
-# ==========================================
+    latest_classification = session.get(
+        "latest_classification"
+    )
 
-@app.route("/analyze-photo", methods=["POST"])
-def analyze_photo():
+    latest_message = session.get(
+        "latest_message"
+    )
 
-    # Get the uploaded photo
-    photo = request.files.get("photo")
-
-
-    # Check whether a photo was selected
-    if photo is None or photo.filename == "":
-
-        return """
-        <h1>❌ No photo selected</h1>
-
-        <p>
-            Please choose a payasam photo and try again.
-        </p>
-        """
-
-
-    # Make the filename safe
-    filename = secure_filename(photo.filename)
-
-
-    # Create the complete file path
-    filepath = os.path.join(
-        app.config["UPLOAD_FOLDER"],
-        filename
+    return render_template(
+        "index.html",
+        latest_pai=latest_pai,
+        latest_type=latest_type,
+        latest_classification=latest_classification,
+        latest_message=latest_message
     )
 
 
-    # Save the uploaded photo
-    photo.save(filepath)
+# =========================================================
+# PHOTO ANALYSIS
+# =========================================================
 
-    print("Photo saved:", filepath)
+@app.route(
+    "/analyze-photo",
+    methods=["POST"]
+)
+def analyze_photo():
 
+    # -----------------------------------------------------
+    # CHECK FILE
+    # -----------------------------------------------------
 
-    try:
+    if "image" not in request.files:
 
-        # ==========================================
-        # LOAD IMAGE
-        # ==========================================
+        return "No image uploaded."
 
-        image = load_image(filepath)
+    file = request.files["image"]
 
+    if file.filename == "":
 
-        # ==========================================
-        # RESIZE IMAGE
-        # ==========================================
-
-        image = resize_image(image)
-
-
-        # ==========================================
-        # VISUAL ANALYSIS
-        # ==========================================
-
-        features = analyze_visual_features(image)
+        return "No image selected."
 
 
-        print("Visual Features:", features)
+    # -----------------------------------------------------
+    # SAVE IMAGE
+    # -----------------------------------------------------
+
+    filename = secure_filename(
+        file.filename
+    )
+
+    filepath = os.path.join(
+        IMAGE_FOLDER,
+        filename
+    )
+
+    file.save(filepath)
 
 
-        # ==========================================
-        # PAYASAM CHECK
-        # ==========================================
+    # -----------------------------------------------------
+    # LOAD IMAGE
+    # -----------------------------------------------------
 
-        if not is_likely_payasam(features):
+    image = load_image(
+        filepath
+    )
 
-            return """
-            <!DOCTYPE html>
+    if image is None:
 
-            <html>
-
-            <head>
-
-                <title>Payasam Not Detected</title>
-
-            </head>
+        return "Could not read image."
 
 
-            <body>
+    # -----------------------------------------------------
+    # RESIZE IMAGE
+    # -----------------------------------------------------
 
-                <h1>❌ PAYASAM NOT DETECTED</h1>
+    image = resize_image(
+        image
+    )
 
 
-                <h2>
-                    🍛 Something suspicious was detected.
-                </h2>
+    # -----------------------------------------------------
+    # ANALYZE VISUAL FEATURES
+    # -----------------------------------------------------
 
+    features = analyze_visual_features(
+        image
+    )
+
+
+    # -----------------------------------------------------
+    # CHECK WHETHER IMAGE IS PAYASAM
+    # -----------------------------------------------------
+
+    if not is_likely_payasam(
+        features,
+        image
+    ):
+
+        return """
+        <!DOCTYPE html>
+
+        <html>
+
+        <head>
+
+            <title>
+                PIA - Photo Analysis
+            </title>
+
+            <style>
+
+                body {
+
+                    font-family:
+                        Arial,
+                        sans-serif;
+
+                    background:
+                        #f5f5f5;
+
+                    text-align:
+                        center;
+
+                    padding:
+                        80px;
+
+                }
+
+                .box {
+
+                    background:
+                        white;
+
+                    max-width:
+                        650px;
+
+                    margin:
+                        auto;
+
+                    padding:
+                        45px;
+
+                    border-radius:
+                        20px;
+
+                    box-shadow:
+                        0 5px 20px
+                        rgba(0,0,0,0.1);
+
+                }
+
+                h1 {
+
+                    color:
+                        #d9534f;
+
+                }
+
+                .message {
+
+                    font-size:
+                        20px;
+
+                    margin-top:
+                        20px;
+
+                }
+
+                .back {
+
+                    display:
+                        inline-block;
+
+                    margin-top:
+                        30px;
+
+                    padding:
+                        12px 25px;
+
+                    background:
+                        #333;
+
+                    color:
+                        white;
+
+                    text-decoration:
+                        none;
+
+                    border-radius:
+                        10px;
+
+                }
+
+            </style>
+
+        </head>
+
+        <body>
+
+            <div class="box">
+
+                <h1>
+                    ❌ PHOTO NOT SUITABLE
+                </h1>
+
+                <div class="message">
+
+                    This image does not appear
+                    to contain payasam.
+
+                </div>
 
                 <p>
-                    The image contains visual characteristics
-                    that do not look suitable for our
-                    payasam analysis.
+
+                    No V-PAI score was generated.
+
                 </p>
 
+                <a
+                    class="back"
+                    href="/"
+                >
 
-                <p>
-                    Please upload a clearer photo of your
-                    payasam.
-                </p>
+                    ← Try Again
+
+                </a>
+
+            </div>
+
+        </body>
+
+        </html>
+        """
 
 
-                <hr>
+    # =====================================================
+    # CALCULATE V-PAI
+    # =====================================================
 
+    raw_vpai = calculate_vpai(
+        features
+    )
+
+    raw_vpai = float(
+        raw_vpai
+    )
+
+
+    # -----------------------------------------------------
+    # NORMALIZE V-PAI
+    #
+    # If old function gives:
+    #
+    # 431 → 43.1
+    # 430 → 43.0
+    #
+    # keep it on a 0-100 scale.
+    # -----------------------------------------------------
+
+    if raw_vpai > 100:
+
+        vpai = raw_vpai / 10
+
+    else:
+
+        vpai = raw_vpai
+
+
+    vpai = max(
+        0,
+        min(
+            vpai,
+            100
+        )
+    )
+
+
+    vpai = round(
+        vpai,
+        1
+    )
+
+
+    # =====================================================
+    # CLASSIFICATION
+    # =====================================================
+
+    classification = classify_vpai(
+        vpai
+    )
+
+
+    # =====================================================
+    # SAVE LATEST PHOTO RESULT
+    # =====================================================
+
+    session["latest_pai"] = vpai
+
+    session["latest_type"] = "PHOTO"
+
+    session["latest_classification"] = (
+        classification
+    )
+
+    session["latest_message"] = (
+        "Static visual analysis completed. "
+        "The sample has been assigned a "
+        "V-PAI score."
+    )
+
+
+    # =====================================================
+    # PHOTO RESULT PAGE
+    # =====================================================
+
+    return f"""
+    <!DOCTYPE html>
+
+    <html>
+
+    <head>
+
+        <title>
+            PIA - Photo Analysis
+        </title>
+
+        <style>
+
+            body {{
+
+                font-family:
+                    Arial,
+                    sans-serif;
+
+                background:
+                    #f5f5f5;
+
+                text-align:
+                    center;
+
+                padding:
+                    50px;
+
+            }}
+
+
+            .container {{
+
+                background:
+                    white;
+
+                max-width:
+                    700px;
+
+                margin:
+                    auto;
+
+                padding:
+                    40px;
+
+                border-radius:
+                    20px;
+
+                box-shadow:
+                    0 5px 20px
+                    rgba(0,0,0,0.1);
+
+            }}
+
+
+            h1 {{
+
+                color:
+                    #333;
+
+            }}
+
+
+            .score {{
+
+                font-size:
+                    52px;
+
+                font-weight:
+                    bold;
+
+                margin:
+                    30px 0;
+
+            }}
+
+
+            .classification {{
+
+                font-size:
+                    25px;
+
+                margin-bottom:
+                    30px;
+
+            }}
+
+
+            .features {{
+
+                text-align:
+                    left;
+
+                background:
+                    #f8f8f8;
+
+                padding:
+                    20px;
+
+                border-radius:
+                    12px;
+
+            }}
+
+
+            .features p {{
+
+                font-size:
+                    18px;
+
+                margin:
+                    12px 0;
+
+            }}
+
+
+            .back {{
+
+                display:
+                    inline-block;
+
+                margin-top:
+                    30px;
+
+                padding:
+                    12px 25px;
+
+                background:
+                    #333;
+
+                color:
+                    white;
+
+                text-decoration:
+                    none;
+
+                border-radius:
+                    10px;
+
+            }}
+
+        </style>
+
+    </head>
+
+
+    <body>
+
+
+        <div class="container">
+
+
+            <h1>
+                PAYASAM ANALYSIS
+            </h1>
+
+
+            <h2>
+                PHOTO ANALYSIS
+            </h2>
+
+
+            <div class="score">
+
+                V-PAI:
+                {vpai:.1f}/100
+
+            </div>
+
+
+            <div class="classification">
+
+                {classification}
+
+            </div>
+
+
+            <div class="features">
 
                 <h3>
-                    🔬 Computer Vision Check
+                    Visual Features
                 </h3>
 
 
                 <p>
-                    The image failed our basic
-                    payasam suitability check.
+
+                    Brightness:
+                    {features["brightness"]}
+
                 </p>
 
 
                 <p>
-                    Try taking a photo with the payasam
-                    clearly visible and with good lighting.
+
+                    Saturation:
+                    {features["saturation"]}
+
                 </p>
 
 
-            </body>
+                <p>
 
-            </html>
-            """
+                    Texture:
+                    {features["texture"]}
 
-
-        # ==========================================
-        # CALCULATE V-PAI
-        # ==========================================
-
-        vpai = calculate_vpai(features)
+                </p>
 
 
-        # ==========================================
-        # CLASSIFICATION
-        # ==========================================
+                <p>
 
-        classification = classify_vpai(vpai)
+                    Edge Density:
+                    {features["edge_density"]}
 
+                </p>
 
-        print("V-PAI:", vpai)
-
-        print("Classification:", classification)
+            </div>
 
 
-        # ==========================================
-        # RESULT PAGE
-        # ==========================================
+            <a
+                class="back"
+                href="/"
+            >
+
+                ← Analyze Another
+
+            </a>
+
+
+        </div>
+
+
+    </body>
+
+    </html>
+    """
+
+
+# =========================================================
+# VIDEO ANALYSIS
+# =========================================================
+
+@app.route(
+    "/analyze-video",
+    methods=["POST"]
+)
+def analyze_video():
+
+    # -----------------------------------------------------
+    # CHECK FILE
+    # -----------------------------------------------------
+
+    if "video" not in request.files:
+
+        return "No video uploaded."
+
+    file = request.files["video"]
+
+    if file.filename == "":
+
+        return "No video selected."
+
+
+    # -----------------------------------------------------
+    # SAVE VIDEO
+    # -----------------------------------------------------
+
+    filename = secure_filename(
+        file.filename
+    )
+
+    filepath = os.path.join(
+        VIDEO_FOLDER,
+        filename
+    )
+
+    file.save(filepath)
+
+
+    # -----------------------------------------------------
+    # GET VIDEO INFORMATION
+    # -----------------------------------------------------
+
+    video_info = get_video_info(
+        filepath
+    )
+
+
+    # -----------------------------------------------------
+    # AI VIDEO VALIDATION
+    # -----------------------------------------------------
+
+    validation = validate_video(
+        filepath
+    )
+
+
+    # -----------------------------------------------------
+    # REJECT UNSUITABLE VIDEO
+    # -----------------------------------------------------
+
+    if not validation["suitable"]:
 
         return f"""
         <!DOCTYPE html>
@@ -203,12 +676,124 @@ def analyze_photo():
 
         <head>
 
-            <meta charset="UTF-8">
+            <title>
+                PIA - Video Analysis
+            </title>
 
-            <meta name="viewport"
-                  content="width=device-width, initial-scale=1.0">
+            <style>
 
-            <title>Payasam Analysis</title>
+                body {{
+
+                    font-family:
+                        Arial,
+                        sans-serif;
+
+                    background:
+                        #f5f5f5;
+
+                    text-align:
+                        center;
+
+                    padding:
+                        60px;
+
+                }}
+
+
+                .container {{
+
+                    background:
+                        white;
+
+                    max-width:
+                        700px;
+
+                    margin:
+                        auto;
+
+                    padding:
+                        40px;
+
+                    border-radius:
+                        20px;
+
+                    box-shadow:
+                        0 5px 20px
+                        rgba(0,0,0,0.1);
+
+                }}
+
+
+                h1 {{
+
+                    color:
+                        #d9534f;
+
+                }}
+
+
+                .message {{
+
+                    font-size:
+                        20px;
+
+                    margin:
+                        25px;
+
+                }}
+
+
+                .info {{
+
+                    background:
+                        #f8f8f8;
+
+                    padding:
+                        20px;
+
+                    border-radius:
+                        12px;
+
+                    text-align:
+                        left;
+
+                }}
+
+
+                .info p {{
+
+                    margin:
+                        10px 0;
+
+                }}
+
+
+                .back {{
+
+                    display:
+                        inline-block;
+
+                    margin-top:
+                        30px;
+
+                    padding:
+                        12px 25px;
+
+                    background:
+                        #333;
+
+                    color:
+                        white;
+
+                    text-decoration:
+                        none;
+
+                    border-radius:
+                        10px;
+
+                }}
+
+            </style>
 
         </head>
 
@@ -216,117 +801,740 @@ def analyze_photo():
         <body>
 
 
+            <div class="container">
+
+
+                <h1>
+                    ❌ VIDEO NOT SUITABLE
+                </h1>
+
+
+                <div class="message">
+
+                    {validation["message"]}
+
+                </div>
+
+
+                <div class="info">
+
+
+                    <p>
+
+                        <strong>
+                            Visual Suitability:
+                        </strong>
+
+                        {validation["confidence"]}%
+
+                    </p>
+
+
+                    <p>
+
+                        <strong>
+                            Frames Checked:
+                        </strong>
+
+                        {validation["frames_checked"]}
+
+                    </p>
+
+
+                    <p>
+
+                        <strong>
+                            PAI:
+                        </strong>
+
+                        Not generated
+
+                    </p>
+
+
+                </div>
+
+
+                <a
+                    class="back"
+                    href="/"
+                >
+
+                    ← Try Another Video
+
+                </a>
+
+
+            </div>
+
+
+        </body>
+
+        </html>
+        """
+
+
+    # =====================================================
+    # OPTICAL FLOW
+    # =====================================================
+
+    flow = calculate_optical_flow(
+        filepath
+    )
+
+
+    # =====================================================
+    # FLOW VALUES
+    # =====================================================
+
+    average_movement = float(
+        flow.get(
+            "average_movement",
+            0
+        )
+    )
+
+
+    maximum_movement = float(
+        flow.get(
+            "maximum_movement",
+            0
+        )
+    )
+
+
+    consistency = float(
+        flow.get(
+            "movement_consistency",
+            0
+        )
+    )
+
+
+    flow_change = float(
+        flow.get(
+            "flow_change",
+            1.0
+        )
+    )
+
+
+    # =====================================================
+    # SPEED SCORE
+    # =====================================================
+
+    speed_score = min(
+        average_movement * 20,
+        100
+    )
+
+
+    # =====================================================
+    # MAXIMUM FLOW SCORE
+    # =====================================================
+
+    max_flow_score = min(
+        maximum_movement * 10,
+        100
+    )
+
+
+    # =====================================================
+    # CONSISTENCY SCORE
+    # =====================================================
+
+    consistency_score = (
+        consistency * 100
+    )
+
+
+    # =====================================================
+    # FLOW TREND SCORE
+    # =====================================================
+
+    trend_difference = abs(
+        flow_change - 1.0
+    )
+
+
+    trend_score = max(
+        0,
+        100 - (
+            trend_difference * 100
+        )
+    )
+
+
+    # =====================================================
+    # PAI CALCULATION
+    # =====================================================
+
+    pai = (
+
+        speed_score * 0.45
+
+        + consistency_score * 0.25
+
+        + max_flow_score * 0.15
+
+        + trend_score * 0.15
+
+    )
+
+
+    pai = max(
+        0,
+        min(
+            pai,
+            100
+        )
+    )
+
+
+    pai = round(
+        pai,
+        1
+    )
+
+
+    # =====================================================
+    # PAI CLASSIFICATION
+    # =====================================================
+
+    if pai >= 75:
+
+        classification = (
+            "🌊 VERY FLUID FLOW"
+        )
+
+    elif pai >= 55:
+
+        classification = (
+            "🥣 MODERATELY FLUID FLOW"
+        )
+
+    elif pai >= 35:
+
+        classification = (
+            "🍮 THICK FLOW"
+        )
+
+    else:
+
+        classification = (
+            "🧱 VERY THICK FLOW"
+        )
+
+
+    # =====================================================
+    # SAVE LATEST VIDEO RESULT
+    # =====================================================
+
+    session["latest_pai"] = pai
+
+    session["latest_type"] = "VIDEO"
+
+    session["latest_classification"] = (
+        classification
+    )
+
+    session["latest_message"] = (
+        "Motion and flow analysis completed. "
+        "The sample has been assigned a "
+        "PAI score."
+    )
+
+
+    # =====================================================
+    # VIDEO RESULT PAGE
+    #
+    # IMPORTANT:
+    # There is NO movement graph here.
+    # =====================================================
+
+    return f"""
+    <!DOCTYPE html>
+
+    <html>
+
+    <head>
+
+        <title>
+            PIA - Video Analysis
+        </title>
+
+
+        <style>
+
+            body {{
+
+                font-family:
+                    Arial,
+                    sans-serif;
+
+                background:
+                    #f5f5f5;
+
+                text-align:
+                    center;
+
+                padding:
+                    40px;
+
+            }}
+
+
+            .container {{
+
+                background:
+                    white;
+
+                max-width:
+                    850px;
+
+                margin:
+                    auto;
+
+                padding:
+                    40px;
+
+                border-radius:
+                    20px;
+
+                box-shadow:
+                    0 5px 20px
+                    rgba(0,0,0,0.1);
+
+            }}
+
+
+            h1 {{
+
+                color:
+                    #333;
+
+                margin-bottom:
+                    10px;
+
+            }}
+
+
+            h2 {{
+
+                color:
+                    #555;
+
+                margin-bottom:
+                    25px;
+
+            }}
+
+
+            /* =================================================
+               PAI
+            ================================================= */
+
+            .pai {{
+
+                font-size:
+                    58px;
+
+                font-weight:
+                    bold;
+
+                margin:
+                    25px 0;
+
+            }}
+
+
+            /* =================================================
+               CLASSIFICATION
+            ================================================= */
+
+            .classification {{
+
+                font-size:
+                    26px;
+
+                margin-bottom:
+                    35px;
+
+            }}
+
+
+            /* =================================================
+               STATISTICS
+            ================================================= */
+
+            .stats {{
+
+                display:
+                    grid;
+
+                grid-template-columns:
+                    repeat(2, 1fr);
+
+                gap:
+                    18px;
+
+                margin:
+                    30px 0;
+
+            }}
+
+
+            .stat {{
+
+                background:
+                    #f8f8f8;
+
+                padding:
+                    24px;
+
+                border-radius:
+                    12px;
+
+                border:
+                    1px solid #e5e5e5;
+
+            }}
+
+
+            .stat h3 {{
+
+                margin:
+                    0 0 10px 0;
+
+                font-size:
+                    20px;
+
+            }}
+
+
+            .stat p {{
+
+                font-size:
+                    22px;
+
+                font-weight:
+                    bold;
+
+                margin:
+                    0;
+
+            }}
+
+
+            /* =================================================
+               EXPLANATION
+            ================================================= */
+
+            .info {{
+
+                margin-top:
+                    30px;
+
+                padding:
+                    20px;
+
+                background:
+                    #fafafa;
+
+                border-radius:
+                    12px;
+
+                text-align:
+                    left;
+
+            }}
+
+
+            .info p {{
+
+                margin:
+                    10px 0;
+
+                line-height:
+                    1.6;
+
+            }}
+
+
+            /* =================================================
+               BACK BUTTON
+            ================================================= */
+
+            .back {{
+
+                display:
+                    inline-block;
+
+                margin-top:
+                    30px;
+
+                padding:
+                    13px 28px;
+
+                background:
+                    #333;
+
+                color:
+                    white;
+
+                text-decoration:
+                    none;
+
+                border-radius:
+                    10px;
+
+                font-size:
+                    16px;
+
+            }}
+
+
+            .back:hover {{
+
+                background:
+                    #555;
+
+            }}
+
+
+            /* =================================================
+               MOBILE
+            ================================================= */
+
+            @media (max-width: 600px) {{
+
+                .stats {{
+
+                    grid-template-columns:
+                        1fr;
+
+                }}
+
+
+                .pai {{
+
+                    font-size:
+                        45px;
+
+                }}
+
+
+                .classification {{
+
+                    font-size:
+                        21px;
+
+                }}
+
+            }}
+
+        </style>
+
+    </head>
+
+
+    <body>
+
+
+        <div class="container">
+
+
+            <!-- =================================================
+                 TITLE
+            ================================================= -->
+
             <h1>
-                🍮 PAYASAM ANALYSIS
+
+                🥣 PAYASAM VIDEO ANALYSIS
+
             </h1>
 
 
             <h2>
-                📸 PHOTO ANALYSIS
+
+                FLOW ANALYSIS COMPLETE
+
             </h2>
 
 
-            <hr>
+            <!-- =================================================
+                 PAI
+            ================================================= -->
+
+            <div class="pai">
+
+                PAI:
+                {pai:.1f}/100
+
+            </div>
 
 
-            <h1>
-                V-PAI: {vpai}
-            </h1>
+            <!-- =================================================
+                 CLASSIFICATION
+            ================================================= -->
 
+            <div class="classification">
 
-            <h2>
                 {classification}
-            </h2>
+
+            </div>
 
 
-            <hr>
+            <!-- =================================================
+                 FLOW STATISTICS
+            ================================================= -->
+
+            <div class="stats">
 
 
-            <h3>
-                🔬 Visual Features
-            </h3>
+                <div class="stat">
+
+                    <h3>
+                        🌊 Average Flow
+                    </h3>
+
+                    <p>
+
+                        {average_movement}
+
+                    </p>
+
+                </div>
 
 
-            <p>
-                Brightness:
-                {features["brightness"]:.2f}
-            </p>
+                <div class="stat">
+
+                    <h3>
+                        📈 Maximum Flow
+                    </h3>
+
+                    <p>
+
+                        {maximum_movement}
+
+                    </p>
+
+                </div>
 
 
-            <p>
-                Saturation:
-                {features["saturation"]:.2f}
-            </p>
+                <div class="stat">
+
+                    <h3>
+                        🔄 Consistency
+                    </h3>
+
+                    <p>
+
+                        {round(consistency * 100, 2)}%
+
+                    </p>
+
+                </div>
 
 
-            <p>
-                Texture:
-                {features["texture"]:.2f}
-            </p>
+                <div class="stat">
+
+                    <h3>
+                        📊 Flow Trend
+                    </h3>
+
+                    <p>
+
+                        {round(flow_change, 3)}
+
+                    </p>
+
+                </div>
 
 
-            <p>
-                Edge Density:
-                {features["edge_density"]:.2%}
-            </p>
+            </div>
 
 
-        </body>
+            <!-- =================================================
+                 EXPLANATION
+            ================================================= -->
 
-        </html>
-        """
-
-
-    # ==========================================
-    # ERROR HANDLING
-    # ==========================================
-
-    except Exception as error:
-
-        print("Analysis error:", error)
+            <div class="info">
 
 
-        return f"""
-        <!DOCTYPE html>
+                <p>
 
-        <html>
+                    <strong>
+                        How PAI is calculated:
+                    </strong>
 
-        <head>
+                    PAI combines flow speed,
+                    movement consistency,
+                    maximum movement,
+                    and flow trend.
 
-            <title>Analysis Error</title>
-
-        </head>
-
-
-        <body>
-
-            <h1>
-                ❌ COULD NOT ANALYZE THE IMAGE
-            </h1>
+                </p>
 
 
-            <p>
-                Something went wrong while analyzing
-                the uploaded image.
-            </p>
+                <p>
+
+                    <strong>
+                        Interpretation:
+                    </strong>
+
+                    Higher PAI indicates more fluid
+                    movement, while lower PAI indicates
+                    thicker and slower movement.
+
+                </p>
 
 
-            <p>
-                Technical error:
-                {error}
-            </p>
+                <p>
+
+                    <strong>
+                        Current range:
+                    </strong>
+
+                    75-100 = Very Fluid,
+                    55-74 = Moderately Fluid,
+                    35-54 = Thick,
+                    0-34 = Very Thick.
+
+                </p>
 
 
-        </body>
-
-        </html>
-        """
+            </div>
 
 
-# ==========================================
-# START FLASK
-# ==========================================
+            <!-- =================================================
+                 BACK
+            ================================================= -->
+
+            <a
+                class="back"
+                href="/"
+            >
+
+                ← Analyze Another Video
+
+            </a>
+
+
+        </div>
+
+
+    </body>
+
+    </html>
+    """
+
+
+# =========================================================
+# RUN APPLICATION
+# =========================================================
 
 if __name__ == "__main__":
 
-    app.run(debug=True)
+    app.run(
+        debug=True
+    )
